@@ -1,819 +1,1142 @@
 <!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="UTF-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Todo List Online - Minimalist, No-Login Required Web Todo App</title>
-        <meta
-            name="keywords"
-            content="online todo list, minimalist todo app, no login todo, web todo list, todo manager, task scheduler, memo app, browser-based todo, instant access, secure storage, personal todo, professional todo, work and life assistant">
-        <meta
-            name="description"
-            content="uiineed's Todo List Online is a minimalist, no-login-required web app that helps you manage your tasks and schedules effortlessly. Store your todos securely in your browser's local cache, and enjoy a seamless experience without the hassle of sign-ups or logins. Perfect for both personal and professional use!">
-        <link type="favicon" rel="shortcut icon" href="public/img/favicon.png"/>
-        <link href="public/css/normalize.css" rel="stylesheet" media="screen">
-        <link href="public/css/style.min.css" rel="stylesheet" media="screen">
-        <!-- umami provides data services, fork to your own site remember to change the ID!，umami：https://umami.is/-->
-        <script defer src="https://cloud.umami.is/script.js" data-website-id="b562f7ba-2e5c-4b7a-97b9-679a5eaa2b95"></script>
-        <script>
-            // Automatically detect and switch language
-            const browserLanguage = navigator.language || navigator.userLanguage;
-            const languageCode = browserLanguage.split('-')[0].toLowerCase();
-            if (!localStorage.getItem('uiineed-todos-lang')) localStorage.setItem('uiineed-todos-lang', languageCode);
-            const userLanguage = localStorage.getItem('uiineed-todos-lang');
-            if (userLanguage && userLanguage === "zh") window.location.href = (window.location.pathname === "/") ? 'index-zh.html' : window.location.href.replace('index.html', 'index-zh.html');
-        </script>
-        <script>
-            const nativeAlert = window.alert;
-            window.alert = function(message, title = 'Prompt') {
-                return new Promise((resolve) => {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'custom-alert-overlay';
-                    const alertBox = document.createElement('div');
-                    alertBox.className = 'custom-alert';
-                    alertBox.innerHTML = `
-<div class="custom-alert-title">${title}</div>
-<div class="custom-alert-content">${message}</div>
-<div class="custom-alert-buttons">
-    <button class="custom-alert-btn confirm">OK</button>
-</div>
-                    `;
-                    overlay.appendChild(alertBox);
-                    document.body.appendChild(overlay);
-                    const confirmBtn = alertBox.querySelector('.confirm');
-                    confirmBtn.addEventListener('click', () => {
-                        alertBox.style.animation = 'popOut 0.3s forwards';
-                        setTimeout(() => {
-                            document.body.removeChild(overlay);
-                            resolve(true);
-                        }, 300);
-                    });
-                    overlay.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape') confirmBtn.click();
-                    });
-                    confirmBtn.focus();
-                });
-            };
-            const nativeConfirm = window.alert;
-            window.confirm = function(message, title = 'Please Confirm') {
-                return new Promise((resolve) => {
-                    const overlay = document.createElement('div');
-                    overlay.className = 'custom-alert-overlay';
-                    const alertBox = document.createElement('div');
-                    alertBox.className = 'custom-alert';
-                    alertBox.innerHTML = `
-<div class="custom-alert-title">${title}</div>
-<div class="custom-alert-content">${message}</div>
-<div class="custom-alert-buttons">
-    <button class="custom-alert-btn cancel">Cancel</button>
-    <button class="custom-alert-btn confirm">OK</button>
-</div>
-                    `;
-                    overlay.appendChild(alertBox);
-                    document.body.appendChild(overlay);
-                    const confirmBtn = alertBox.querySelector('.confirm');
-                    const cancelBtn = alertBox.querySelector('.cancel');
-                    confirmBtn.addEventListener('click', () => {
-                        alertBox.style.animation = 'popOut 0.3s forwards';
-                        setTimeout(() => {
-                            document.body.removeChild(overlay);
-                            resolve(true);
-                        }, 300);
-                    });
-                    cancelBtn.addEventListener('click', () => {
-                        alertBox.style.animation = 'popOut 0.3s forwards';
-                        setTimeout(() => {
-                            document.body.removeChild(overlay);
-                            resolve(false);
-                        }, 300);
-                    });
-                    overlay.addEventListener('keydown', (e) => {
-                        if (e.key === 'Escape') cancelBtn.click();
-                    });
-                    cancelBtn.focus();
-                });
-            };
-        </script>
-        <!-- Vue 2.x Todo List -->
-        <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
-        <script src="public/js/vue.js"></script>
-    </head>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Website Favorites</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="icon" href="https://evan.plus/favicon.ico" type="image/x-icon">
+    <style>
+/* 基础样式 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
 
-    <body>
-        <div class="bg-pattern"></div>
-        <div class="todo-wrapper">
-            <div id="todo-app" class="todo-app">
-                <div class="container header ">
-                    <div class="todo-input">
-                        <h1 class="title">
-                            <img src="public/img/todo.svg" alt="" class="title-1" draggable="false">
-                            <div class="ani-vector">
-                                <span></span>
-                                <span></span>
-                            </div>
-                            <div class="pendulums">
-                                <div class="pendulum">
-                                    <div class="bar"></div>
-                                    <div class="motion">
-                                        <div class="string"></div>
-                                        <div class="weight"></div>
-                                    </div>
-                                </div>
-                                <div class="pendulum shadow">
-                                    <div class="bar"></div>
-                                    <div class="motion">
-                                        <div class="string"></div>
-                                        <div class="weight"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </h1>
-                        <div class="add-content-wrapper">
-                            <input
-                                type="text"
-                                rows="3"
-                                class="add-content"
-                                placeholder="Add a to-do item..."
-                                v-model="newTodoTitle"
-                                @keyup.enter="addTodo"
-                                :class='{empty:emptyChecked}'/>
-                            <transition name="tips">
-                                <div class="tips" v-if='emptyChecked' style="color:red">💡Please enter content!</div>
-                            </transition>
-                            <button class="btn submit-btn" type="button" @click="addTodo">Add</button>
-                        </div>
+body {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.6;
+    background: #f9fafb;
+    color: #374151;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.9rem; 
+}
 
-                    </div>
-                </div>
+/* 前台样式 */
+.frontend {
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+    flex-grow: 1;
+}
 
-                <!-- todo list -->
-                <div class="container main">
-                    <div class="todo-list-box">
-                        <div class="bar-message">
-                            <input
-                                type="button"
-                                class="btn btn-label btn-allFinish"
-                                value="Mark All Done"
-                                @click="markAllAsCompleted"
-                                v-if="todos.length || recycleBin.length"/>
-                            <template>
-                                <div>
-                                    <div v-if="!isEditing" @dblclick="editText" class="bar-message-text">
-                                        {{ slogan }}
-                                    </div>
-                                    <div v-else="v-else">
-                                        <input
-                                            v-model="slogan"
-                                            ref="sloganInput"
-                                            class="slogan-input"
-                                            @keyup.enter="saveText"
-                                            @keyup.esc="cancelText"/>
-                                        <div class="todo-btn btn-edit-submit slogan-btn" @click="saveText"><img
-                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAxOSAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUwODQgMTAuMzEwOUMxNy4yMzI0IDEwLjU4MjMgMTguMDM5NCAxMC4yMTU1IDE4LjMxMDkgOS40OTE1N0MxOC41ODIzIDguNzY3NiAxOC4yMTU1IDcuOTYwNjMgMTcuNDkxNiA3LjY4OTE0TDE2LjUwODQgMTAuMzEwOVpNOC45OTk5IDJMMTAuMTMyMSAxLjE3NjU1QzkuODU1OCAwLjc5NjYxOCA5LjQwNzM1IDAuNTgwNjA1IDguOTM4MDIgMC42MDEzNjhDOC40Njg3IDAuNjIyMTMgOC4wNDEwNyAwLjg3Njg5OSA3Ljc5OTM4IDEuMjc5NzRMOC45OTk5IDJaTTcuNjcxNzUgMTcuNTU3MkM3LjQyNzIyIDE4LjI5MDcgNy44MjM2MiAxOS4wODM2IDguNTU3MTMgMTkuMzI4MUM5LjI5MDY0IDE5LjU3MjcgMTAuMDgzNSAxOS4xNzYzIDEwLjMyOCAxOC40NDI4TDcuNjcxNzUgMTcuNTU3MlpNMS4wOTk2MyA3LjkyNzkzQzAuNTA3NTQxIDguNDI1MTkgMC40MzA2NjkgOS4zMDgyOCAwLjkyNzkzMSA5LjkwMDM3QzEuNDI1MTkgMTAuNDkyNSAyLjMwODI4IDEwLjU2OTMgMi45MDAzNyAxMC4wNzIxTDEuMDk5NjMgNy45Mjc5M1pNMTcuNDkxNiA3LjY4OTE0QzE1LjgwMjMgNy4wNTU2NSAxMy45ODQxIDUuNTAzNiAxMi41MDk5IDMuOTY3OTVDMTEuNzkzIDMuMjIxMjIgMTEuMTkzOSAyLjUxNzQgMTAuNzc0NCAyLjAwMDU2QzEwLjU2NTEgMS43NDI2OSAxMC40MDE3IDEuNTMyNzYgMTAuMjkxOSAxLjM4OTA4QzEwLjIzNyAxLjMxNzI3IDEwLjE5NTYgMS4yNjIxMSAxMC4xNjg2IDEuMjI1OUMxMC4xNTUxIDEuMjA3OCAxMC4xNDUzIDEuMTk0NDQgMTAuMTM5MSAxLjE4NjEyQzEwLjEzNjEgMS4xODE5NSAxMC4xMzQgMS4xNzkwNSAxMC4xMzI4IDEuMTc3NDRDMTAuMTMyMiAxLjE3NjY0IDEwLjEzMTggMS4xNzYxNiAxMC4xMzE3IDEuMTc2MDFDMTAuMTMxNyAxLjE3NTkzIDEwLjEzMTcgMS4xNzU5NCAxMC4xMzE3IDEuMTc2MDNDMTAuMTMxOCAxLjE3NjA3IDEwLjEzMTkgMS4xNzYyIDEwLjEzMTkgMS4xNzYyM0MxMC4xMzIgMS4xNzYzNyAxMC4xMzIxIDEuMTc2NTUgOC45OTk5IDJDNy44Njc2NyAyLjgyMzQ1IDcuODY3ODMgMi44MjM2NyA3Ljg2OCAyLjgyMzlDNy44NjgwOCAyLjgyNDAxIDcuODY4MjYgMi44MjQyNiA3Ljg2ODQyIDIuODI0NDdDNy44Njg3MiAyLjgyNDkgNy44NjkwOSAyLjgyNTQgNy44Njk1MyAyLjgyNTk5QzcuODcwMzkgMi44MjcxOCA3Ljg3MTUgMi44Mjg2OSA3Ljg3Mjg1IDIuODMwNTRDNy44NzU1NCAyLjgzNDIzIDcuODc5MjIgMi44MzkyNCA3Ljg4Mzg1IDIuODQ1NTNDNy44OTMxIDIuODU4MTEgNy45MDYxOSAyLjg3NTgyIDcuOTIyOTggMi44OTgzN0M3Ljk1NjU2IDIuOTQzNDUgOC4wMDQ5OSAzLjAwNzkyIDguMDY3MyAzLjA4OTQ0QzguMTkxODUgMy4yNTIzOSA4LjM3MjE3IDMuNDgzODcgOC42MDAzOCAzLjc2NTA2QzkuMDU1OTMgNC4zMjYzNSA5LjcwNjg1IDUuMDkxMjggMTAuNDkgNS45MDcwNUMxMi4wMTU4IDcuNDk2NCAxNC4xOTc3IDkuNDQ0MzUgMTYuNTA4NCAxMC4zMTA5TDE3LjQ5MTYgNy42ODkxNFpNNy42MTM5NyAyLjE5ODAxQzguMTA2NjkgNS42NDY2OSA4LjM0OTk3IDguODI5MjYgOC4zNDk5NyAxMS41QzguMzQ5OTcgMTQuMjAxNSA4LjEwMDE0IDE2LjI3MjIgNy42NzE3NSAxNy41NTcyTDEwLjMyOCAxOC40NDI4QzEwLjg5OTggMTYuNzI3OCAxMS4xNSAxNC4yOTg2IDExLjE1IDExLjVDMTEuMTUgOC42NzA3NiAxMC44OTMyIDUuMzUzMzEgMTAuMzg1OCAxLjgwMTk5TDcuNjEzOTcgMi4xOTgwMVpNMi45MDAzNyAxMC4wNzIxQzMuODgyMjggOS4yNDc0MiA1LjI5NjM2IDguMDkwMzMgNi42NDM3OSA2LjgzMDFDNy45NzY2NCA1LjU4MzUyIDkuMzQ1ODcgNC4xNDQ1OCAxMC4yMDA0IDIuNzIwMjZMNy43OTkzOCAxLjI3OTc0QzcuMTU0MDIgMi4zNTU0MiA2LjAyMzMxIDMuNTc2NjMgNC43MzExOCA0Ljc4NTEzQzMuNDUzNjQgNS45Nzk5OCAyLjExNzcyIDcuMDcyODkgMS4wOTk2MyA3LjkyNzkzTDIuOTAwMzcgMTAuMDcyMVoiIGZpbGw9IiMzMzMyMkUiLz4KPC9zdmc+Cg=="
-                                            alt="Finish"></div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
+.nav-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
 
-                        <ul v-if="!todos.length && showEmptyTips" class="empty-tips">
-                            <li>Add Your First To-Do Item! 📝</li>
-                            <li>Usage Tips 💡:</li>
-                            <li>✔️ Press Enter to submit actions.</li>
-                            <li>✔️ Drag to reorder your to-dos (PC only)</li>
-                            <li>✔️ Double-click to edit slogan and tasks.</li>
-                            <li>✔️ Access quick actions in the right sidebar.</li>
-                            <li>🔒 Your data is stored locally in your browser.</li>
-                            <li>📝 Supports data download and import.
-                            </li>
-                        </ul>
+.logo-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+}
 
-                        <transition-group
-                            name="drag"
-                            class="todo-list"
-                            tag="ul"
-                            mode="in-out"
-                            @before-enter="beforeEnter"
-                            @enter="enter"
-                            @after-enter="afterEnter"
-                            :css="false"
-                            appear="appear">
+.logo-container img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: none; /* 默认隐藏LOGO */
+}
 
-                            <li
-                                v-for='(todo, index) in filteredTodos'
-                                :key='todo.id'
-                                class='todo-item'
-                                @dragenter="dragenter($event, index)"
-                                @dragover="dragover($event, index)"
-                                @dragstart="dragstart(index)"
-                                :data-delay="index * 150 * delayTime"
-                                v-show="show"
-                                :draggable="!(editedTodo !== null && editedTodo.id === todo.id)">
-                                <div
-                                    class="todo-content"
-                                    :class='{completed:todo.completed}'
-                                    @dblclick="editdTodo(todo)">
-                                    {{todo.title}}</div>
-                                <div
-                                    class="todo-btn btn-finish"
-                                    v-if="!todo.completed"
-                                    @click="markAsCompleted(todo)"></div>
-                                <div
-                                    class="todo-btn btn-unfinish"
-                                    v-if="todo.completed"
-                                    @click="markAsUncompleted(todo)">
-                                    <img
-                                        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAyNCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTIuMzYzMTcgOS42NzUwNkMxLjU1OTM5IDkuNDc0NDkgMC43NDUyMDQgOS45NjM0OCAwLjU0NDYyOSAxMC43NjczQzAuMzQ0MDU0IDExLjU3MSAwLjgzMzA0NyAxMi4zODUyIDEuNjM2ODMgMTIuNTg1OEwyLjM2MzE3IDkuNjc1MDZaTTguMTU4NzMgMTZMNi43ODA0MSAxNi41OTE4QzcuMDMwOTggMTcuMTc1NCA3LjYyMTk1IDE3LjUzNzkgOC4yNTU3NSAxNy40OTY5QzguODg5NTQgMTcuNDU1OCA5LjQyODc3IDE3LjAyIDkuNjAxOTEgMTYuNDA4OUw4LjE1ODczIDE2Wk0yMi4zMjYxIDMuNDY0MTNDMjMuMTM0NyAzLjI4NDA2IDIzLjY0NDIgMi40ODI1NyAyMy40NjQxIDEuNjczOTVDMjMuMjg0MSAwLjg2NTMyOCAyMi40ODI2IDAuMzU1NzkxIDIxLjY3MzkgMC41MzU4NjZMMjIuMzI2MSAzLjQ2NDEzWk0xLjYzNjgzIDEyLjU4NThDMi4wMjc2NCAxMi42ODMzIDMuMTIyOTkgMTMuMTUxIDQuMjc3OCAxMy45NDI2QzUuNDM5ODggMTQuNzM5MyA2LjM4OTA2IDE1LjY4MDMgNi43ODA0MSAxNi41OTE4TDkuNTM3MDUgMTUuNDA4MkM4LjgxMDk0IDEzLjcxNzEgNy4zMDE1NyAxMi4zNzgzIDUuOTc0MDYgMTEuNDY4MkM0LjYzOTI3IDEwLjU1MzIgMy4yMTM5OSA5Ljg4NzM4IDIuMzYzMTcgOS42NzUwNkwxLjYzNjgzIDEyLjU4NThaTTkuNjAxOTEgMTYuNDA4OUMxMC4xMzU5IDE0LjUyNDQgMTEuNDk0OCAxMS42NTg1IDEzLjY3MjcgOS4wNjM5NUMxNS44NDQ1IDYuNDc2NzUgMTguNzQxNyA0LjI2MjM1IDIyLjMyNjEgMy40NjQxM0wyMS42NzM5IDAuNTM1ODY2QzE3LjI1ODMgMS41MTkyIDEzLjgyNzUgNC4yMTM0MiAxMS4zNzQ5IDcuMTM1MTRDOC45Mjg1MiAxMC4wNDk1IDcuMzY2NzQgMTMuMjkyOSA2LjcxNTU1IDE1LjU5MTFMOS42MDE5MSAxNi40MDg5WiIgZmlsbD0iIzMzMzIyRSIvPgo8L3N2Zz4K"
-                                        alt="Mark as Incomplete"
-                                        class="icon-finish" draggable="false">
-                                </div>
-                                <div
-                                    v-if="todo.removed"
-                                    class="todo-btn btn-restore"
-                                    @click="restoreTodo(todo)">
-                                    <img
-                                        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkiIGhlaWdodD0iMTkiIHZpZXdCb3g9IjAgMCAxOSAxOSIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTcuMzQ3OTggMi42NTc5MkM3LjcxMTM0IDEuOTEzNDQgNy40MDIzOCAxLjAxNTM1IDYuNjU3OSAwLjY1MTk4OEM1LjkxMzQxIDAuMjg4NjI3IDUuMDE1MzIgMC41OTc1OSA0LjY1MTk2IDEuMzQyMDhMNy4zNDc5OCAyLjY1NzkyWk0xLjUyNiA5LjA4MzMzTDAuMzc1NTcxIDguMTIwNzhDMC4wNzc5NTE2IDguNDc2NDkgLTAuMDM4MzgyIDguOTQ5ODcgMC4wNjA0NjEyIDkuNDAzMDFDMC4xNTkzMDQgOS44NTYxNSAwLjQ2MjIwNiAxMC4yMzgxIDAuODgwOTI0IDEwLjQzNzVMMS41MjYgOS4wODMzM1pNMTQuNTcyNCAxNi41ODkzQzE0LjM0NTYgMTcuMzg2IDE0LjgwNzYgMTguMjE1OCAxNS42MDQ0IDE4LjQ0MjZDMTYuNDAxMiAxOC42Njk0IDE3LjIzMSAxOC4yMDczIDE3LjQ1NzggMTcuNDEwNkwxNC41NzI0IDE2LjU4OTNaTTYuMjUxOTIgMTQuMzMyMUM2LjcxMTQ1IDE1LjAyMTMgNy42NDI3NiAxNS4yMDc2IDguMzMyMDUgMTQuNzQ4MUM5LjAyMTM0IDE0LjI4ODUgOS4yMDc2IDEzLjM1NzIgOC43NDgwOCAxMi42Njc5TDYuMjUxOTIgMTQuMzMyMVpNNC42NTE5NiAxLjM0MjA4QzMuNjc2NiAzLjM0MDQ3IDIuNjAwMzMgNS4wNDUyNSAxLjc2NjU4IDYuMjUxMDhDMS4zNTA1OSA2Ljg1MjcyIDAuOTk3MjYzIDcuMzI2ODUgMC43NTAzODQgNy42NDc2MkMwLjYyNzAwNSA3LjgwNzkzIDAuNTMwMzkyIDcuOTI5NyAwLjQ2NjA0NyA4LjAwOTY5QzAuNDMzODggOC4wNDk2NyAwLjQwOTc5NiA4LjA3OTIgMC4zOTQ0ODIgOC4wOTc4NkMwLjM4NjgyNiA4LjEwNzE4IDAuMzgxMzY0IDguMTEzNzkgMC4zNzgxODMgOC4xMTc2M0MwLjM3NjU5MiA4LjExOTU1IDAuMzc1NTcyIDguMTIwNzcgMC4zNzUxMzMgOC4xMjEzQzAuMzc0OTE0IDguMTIxNTcgMC4zNzQ4NCA4LjEyMTY1IDAuMzc0OTEyIDguMTIxNTdDMC4zNzQ5NDggOC4xMjE1MiAwLjM3NTAyMSA4LjEyMTQ0IDAuMzc1MTMxIDguMTIxM0MwLjM3NTE4NiA4LjEyMTI0IDAuMzc1Mjk2IDguMTIxMTEgMC4zNzUzMjMgOC4xMjEwN0MwLjM3NTQ0MiA4LjEyMDkzIDAuMzc1NTcxIDguMTIwNzggMS41MjYgOS4wODMzM0MyLjY3NjQzIDEwLjA0NTkgMi42NzY1OCAxMC4wNDU3IDIuNjc2NzMgMTAuMDQ1NUMyLjY3NjggMTAuMDQ1NCAyLjY3Njk2IDEwLjA0NTIgMi42NzcwOSAxMC4wNDUxQzIuNjc3MzUgMTAuMDQ0OCAyLjY3NzY1IDEwLjA0NDQgMi42Nzc5OCAxMC4wNDRDMi42Nzg2NSAxMC4wNDMyIDIuNjc5NDYgMTAuMDQyMyAyLjY4MDQyIDEwLjA0MTFDMi42ODIzNCAxMC4wMzg4IDIuNjg0ODYgMTAuMDM1OCAyLjY4Nzk0IDEwLjAzMkMyLjY5NDEyIDEwLjAyNDYgMi43MDI2MSAxMC4wMTQzIDIuNzEzMzMgMTAuMDAxM0MyLjczNDc1IDkuOTc1MTYgMi43NjUwOCA5LjkzNzk1IDIuODAzNjIgOS44OTAwNUMyLjg4MDY3IDkuNzk0MjYgMi45OTA2IDkuNjU1NjEgMy4xMjc3OCA5LjQ3NzM4QzMuNDAyMDEgOS4xMjEwNiAzLjc4NTg3IDguNjA1NjIgNC4yMzQxNyA3Ljk1NzI1QzUuMTI5IDYuNjYzMDggNi4yODk3MiA0LjgyNjIgNy4zNDc5OCAyLjY1NzkyTDQuNjUxOTYgMS4zNDIwOFpNMi4wNDcwNCAxMC40ODk5QzMuNzc2MTcgOS44NDk0MiA1LjczMzE5IDkuMTcyMzEgNy42MzggOC43MjEzN0M5LjU3MDA4IDguMjYzOTkgMTEuMzAyNSA4LjA3NjMxIDEyLjYyODggOC4zMDE3QzEzLjg3NTIgOC41MTM1MiAxNC42Mjg0IDkuMDUwMDggMTUuMDE2MyAxMC4wNDA1QzE1LjQ2MjggMTEuMTgwNyAxNS41MzgzIDEzLjE5NTYgMTQuNTcyNCAxNi41ODkzTDE3LjQ1NzggMTcuNDEwNkMxOC40ODQzIDEzLjgwNDIgMTguNjE2NiAxMS4wMDY3IDE3LjgwOTcgOC45NDY0NkMxNi45NDQyIDYuNzM2MzQgMTUuMTMzNyA1LjY4NDM3IDEzLjEzMTQgNS4zNDQxMUMxMS4yMDkyIDUuMDE3NDMgOS4wMDc5OSA1LjMxNDEzIDYuOTQ2OSA1LjgwMjA2QzQuODU4NTYgNi4yOTY0NCAyLjc2MjgzIDcuMDI1NTggMS4wMDQ5NiA3LjY3NjczTDIuMDQ3MDQgMTAuNDg5OVpNOC43NDgwOCAxMi42Njc5QzcuNTIzMTIgMTAuODMwNSA1LjIyOTM0IDkuMTg1OTMgMi4xNzEwOCA3LjcyOTEzTDAuODgwOTI0IDEwLjQzNzVDMy43NzA2NiAxMS44MTQxIDUuNDc2ODggMTMuMTY5NSA2LjI1MTkyIDE0LjMzMjFMOC43NDgwOCAxMi42Njc5WiIgZmlsbD0iIzMzMzIyRSIvPgo8L3N2Zz4K"
-                                        alt="Restore" draggable="false">
-                                </div>
-                                <div
-                                    class="todo-btn btn-delete"
-                                    v-else="todo.removed"
-                                    @click="removeTodo(todo)">
-                                    <img
-                                        src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTgiIHZpZXdCb3g9IjAgMCAxOCAxOCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xNS4wOTkzIDE3Ljc1OTdDMTUuNzk0OSAxOC4yMDk4IDE2LjcyMzUgMTguMDEwOCAxNy4xNzM2IDE3LjMxNTJDMTcuNjIzNiAxNi42MTk3IDE3LjQyNDYgMTUuNjkxMSAxNi43MjkxIDE1LjI0MUMxMy4zMDc5IDEzLjAyNzMgMTAuODIwOSAxMC45OTU5IDguOTIyNTEgOS4wMzczOUM5LjA5NzQyIDguODQ5ODIgOS4yNzI5MSA4LjY2NTcxIDkuNDQ4ODggOC40ODUzNEMxMS44ODY0IDUuOTg2OTIgMTQuMjQ3MiA0LjM4MDY2IDE2LjI5NDQgMy45NzEyMkMxNy4xMDY3IDMuODA4NzUgMTcuNjMzNSAzLjAxODUyIDE3LjQ3MTEgMi4yMDYxOEMxNy4zMDg2IDEuMzkzODQgMTYuNTE4NCAwLjg2NzAxMyAxNS43MDYgMS4wMjk0OEMxMi43NTMyIDEuNjIwMDUgOS44NjQwNiAzLjc2Mzc5IDcuMzAxNTQgNi4zOTAzN0M3LjE4MTUxIDYuNTEzNCA3LjA2MTgxIDYuNjM3ODkgNi45NDI0OSA2Ljc2Mzc1QzUuNDIwMDEgNC44MDQzMyA0LjM3MDU4IDIuODc2MzIgMy40MjU5MSAwLjg2MzE2NEMzLjA3Mzk5IDAuMTEzMjAyIDIuMTgwNzMgLTAuMjA5NDc1IDEuNDMwNzcgMC4xNDI0NDVDMC42ODA4MDkgMC40OTQzNjUgMC4zNTgxMzIgMS4zODc2MiAwLjcxMDA1MSAyLjEzNzU4QzEuODIwODggNC41MDQ4MSAzLjA3ODk5IDYuNzY1MTEgNC45MjkzMiA5LjA1MzA2QzMuMjIyMDYgMTEuMTM0MSAxLjYyNjY5IDEzLjQzMjggMC4yMjI3MjMgMTUuNzE0MkMtMC4yMTE0NTMgMTYuNDE5NyAwLjAwODUyNzUyIDE3LjM0MzcgMC43MTQwNjQgMTcuNzc3OEMxLjQxOTYgMTguMjEyIDIuMzQzNTIgMTcuOTkyIDIuNzc3NyAxNy4yODY1QzQuMDQ4MTkgMTUuMjIyIDUuNDY0MDUgMTMuMTcyNiA2Ljk1NTU5IDExLjMxNjhDOC45ODUgMTMuMzc2NSAxMS41OTU5IDE1LjQ5MjggMTUuMDk5MyAxNy43NTk3WiIgZmlsbD0iIzMzMzIyRSIvPgo8L3N2Zz4K"
-                                        alt="Delete" draggable="false">
-                                </div>
+.nav-header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e40af;
+}
 
-                                <div
-                                    class="edit-todo-wrapper"
-                                    v-if="editedTodo !== null && editedTodo.id === todo.id">
-                                    <input
-                                        type="text"
-                                        class="edit-todo"
-                                        value="Edit Todo..."
-                                        v-if="editedTodo !== null && editedTodo.id === todo.id"
-                                        v-model="todo.title"
-                                        v-focus="true"
-                                        @keyup.enter="editDone(todo)"
-                                        @keyup.esc="cancelEdit(todo)"
-                                        @dragstart.stop.prevent
-                                        @mousedown.stop />
-                                    <div class="todo-btn btn-edit-submit" @click="editDone(todo)">
-                                        <img
-                                            src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkiIGhlaWdodD0iMjAiIHZpZXdCb3g9IjAgMCAxOSAyMCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZD0iTTE2LjUwODQgMTAuMzEwOUMxNy4yMzI0IDEwLjU4MjMgMTguMDM5NCAxMC4yMTU1IDE4LjMxMDkgOS40OTE1N0MxOC41ODIzIDguNzY3NiAxOC4yMTU1IDcuOTYwNjMgMTcuNDkxNiA3LjY4OTE0TDE2LjUwODQgMTAuMzEwOVpNOC45OTk5IDJMMTAuMTMyMSAxLjE3NjU1QzkuODU1OCAwLjc5NjYxOCA5LjQwNzM1IDAuNTgwNjA1IDguOTM4MDIgMC42MDEzNjhDOC40Njg3IDAuNjIyMTMgOC4wNDEwNyAwLjg3Njg5OSA3Ljc5OTM4IDEuMjc5NzRMOC45OTk5IDJaTTcuNjcxNzUgMTcuNTU3MkM3LjQyNzIyIDE4LjI5MDcgNy44MjM2MiAxOS4wODM2IDguNTU3MTMgMTkuMzI4MUM5LjI5MDY0IDE5LjU3MjcgMTAuMDgzNSAxOS4xNzYzIDEwLjMyOCAxOC40NDI4TDcuNjcxNzUgMTcuNTU3MlpNMS4wOTk2MyA3LjkyNzkzQzAuNTA3NTQxIDguNDI1MTkgMC40MzA2NjkgOS4zMDgyOCAwLjkyNzkzMSA5LjkwMDM3QzEuNDI1MTkgMTAuNDkyNSAyLjMwODI4IDEwLjU2OTMgMi45MDAzNyAxMC4wNzIxTDEuMDk5NjMgNy45Mjc5M1pNMTcuNDkxNiA3LjY4OTE0QzE1LjgwMjMgNy4wNTU2NSAxMy45ODQxIDUuNTAzNiAxMi41MDk5IDMuOTY3OTVDMTEuNzkzIDMuMjIxMjIgMTEuMTkzOSAyLjUxNzQgMTAuNzc0NCAyLjAwMDU2QzEwLjU2NTEgMS43NDI2OSAxMC40MDE3IDEuNTMyNzYgMTAuMjkxOSAxLjM4OTA4QzEwLjIzNyAxLjMxNzI3IDEwLjE5NTYgMS4yNjIxMSAxMC4xNjg2IDEuMjI1OUMxMC4xNTUxIDEuMjA3OCAxMC4xNDUzIDEuMTk0NDQgMTAuMTM5MSAxLjE4NjEyQzEwLjEzNjEgMS4xODE5NSAxMC4xMzQgMS4xNzkwNSAxMC4xMzI4IDEuMTc3NDRDMTAuMTMyMiAxLjE3NjY0IDEwLjEzMTggMS4xNzYxNiAxMC4xMzE3IDEuMTc2MDFDMTAuMTMxNyAxLjE3NTkzIDEwLjEzMTcgMS4xNzU5NCAxMC4xMzE3IDEuMTc2MDNDMTAuMTMxOCAxLjE3NjA3IDEwLjEzMTkgMS4xNzYyIDEwLjEzMTkgMS4xNzYyM0MxMC4xMzIgMS4xNzYzNyAxMC4xMzIxIDEuMTc2NTUgOC45OTk5IDJDNy44Njc2NyAyLjgyMzQ1IDcuODY3ODMgMi44MjM2NyA3Ljg2OCAyLjgyMzlDNy44NjgwOCAyLjgyNDAxIDcuODY4MjYgMi44MjQyNiA3Ljg2ODQyIDIuODI0NDdDNy44Njg3MiAyLjgyNDkgNy44NjkwOSAyLjgyNTQgNy44Njk1MyAyLjgyNTk5QzcuODcwMzkgMi44MjcxOCA3Ljg3MTUgMi44Mjg2OSA3Ljg3Mjg1IDIuODMwNTRDNy44NzU1NCAyLjgzNDIzIDcuODc5MjIgMi44MzkyNCA3Ljg4Mzg1IDIuODQ1NTNDNy44OTMxIDIuODU4MTEgNy45MDYxOSAyLjg3NTgyIDcuOTIyOTggMi44OTgzN0M3Ljk1NjU2IDIuOTQzNDUgOC4wMDQ5OSAzLjAwNzkyIDguMDY3MyAzLjA4OTQ0QzguMTkxODUgMy4yNTIzOSA4LjM3MjE3IDMuNDgzODcgOC42MDAzOCAzLjc2NTA2QzkuMDU1OTMgNC4zMjYzNSA5LjcwNjg1IDUuMDkxMjggMTAuNDkgNS45MDcwNUMxMi4wMTU4IDcuNDk2NCAxNC4xOTc3IDkuNDQ0MzUgMTYuNTA4NCAxMC4zMTA5TDE3LjQ5MTYgNy42ODkxNFpNNy42MTM5NyAyLjE5ODAxQzguMTA2NjkgNS42NDY2OSA4LjM0OTk3IDguODI5MjYgOC4zNDk5NyAxMS41QzguMzQ5OTcgMTQuMjAxNSA4LjEwMDE0IDE2LjI3MjIgNy42NzE3NSAxNy41NTcyTDEwLjMyOCAxOC40NDI4QzEwLjg5OTggMTYuNzI3OCAxMS4xNSAxNC4yOTg2IDExLjE1IDExLjVDMTEuMTUgOC42NzA3NiAxMC44OTMyIDUuMzUzMzEgMTAuMzg1OCAxLjgwMTk5TDcuNjEzOTcgMi4xOTgwMVpNMi45MDAzNyAxMC4wNzIxQzMuODgyMjggOS4yNDc0MiA1LjI5NjM2IDguMDkwMzMgNi42NDM3OSA2LjgzMDFDNy45NzY2NCA1LjU4MzUyIDkuMzQ1ODcgNC4xNDQ1OCAxMC4yMDA0IDIuNzIwMjZMNy43OTkzOCAxLjI3OTc0QzcuMTU0MDIgMi4zNTU0MiA2LjAyMzMxIDMuNTc2NjMgNC43MzExOCA0Ljc4NTEzQzMuNDUzNjQgNS45Nzk5OCAyLjExNzcyIDcuMDcyODkgMS4wOTk2MyA3LjkyNzkzTDIuOTAwMzcgMTAuMDcyMVoiIGZpbGw9IiMzMzMyMkUiLz4KPC9zdmc+Cg=="
-                                            alt="提交" draggable="false">
-                                    </div>
-                                </div>
-                            </li>
-                        </transition-group>
-                        <div class="bar-message bar-bottom">
-                            <div class="bar-message-text">
-                                <span v-if="leftTodosCount">{{leftTodosCount}} items remaining</span>
-                                <span v-else-if="completedTodosCount">All completed, good job!</span>
-                            </div>
-                        </div>
-                    </div>
+/* 调整后台管理按钮的位置和样式 */
+.admin-button-container {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0 2rem;
+}
 
-                    <div class="footer side-bar">
-                        <div class="side-shortcut" @click="shortCutAction()" :class="{fold: isShow}">
-                            <div class="shortcut-switch">
-                                <span class="shortcut-title">{{shortCut}}</span>
-                                <span class="shortcut-name">Quicks
-                                </span>
-                            </div>
+.admin-button-small {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.8rem;
+    background: #1e40af;
+    color: white;
+    border-radius: 0.5rem;
+    transition: background 0.2s ease;
+}
 
-                        </div>
-                        <div class="todo-footer-box">
-                            <ul class="todo-func-list filter">
-                                <!-- <li v-if="todos.length || recycleBin.length">Filter：</li> -->
-                                <!-- <li v-if="hasRemovedTodo" ><input type="button" value="Back"
-                                v-if="hasRemovedTodo" @click="restoreTodo()"></li> -->
-                                <li >
-                                    <input
-                                        class="btn-small action-showAll"
-                                        type="button"
-                                        value="All"
-                                        :class="{selected: intention === 'all'}"
-                                        @click="intention ='all'"></li>
-                                <li v-if="completedTodosCount"><input
-                                    class="btn-small action-progress"
-                                    type="button"
-                                    value="In Progress"
-                                    v-if="leftTodosCount"
-                                    :class="{selected: intention === 'ongoing'}"
-                                    @click="intention ='ongoing'"></li>
-                                <li v-if="completedTodosCount">
-                                    <input
-                                        class="btn-small action-completed"
-                                        type="button"
-                                        value="Completed"
-                                        v-if="completedTodosCount"
-                                        :class="{selected: intention === 'completed'}"
-                                        @click="intention='completed'">
-                                </li>
-                                <li v-if="recycleBin.length">
-                                    <input
-                                        class="btn-small action-deleted"
-                                        type="button"
-                                        v-if="recycleBin.length"
-                                        :class="{selected: intention === 'removed'}"
-                                        value="Trash"
-                                        @click="intention='removed'"/>
-                                </li>
-                            </ul>
-                            <ul class="todo-func-list batch">
-                                <!-- <li v-if="todos.length"></li> -->
-                                <li v-if="leftTodosCount">
-                                    <input
-                                        type="button"
-                                        class="btn-small completed-all"
-                                        v-if="leftTodosCount"
-                                        value="Finish all"
-                                        @click="markAllAsCompleted">
-                                </li>
-                                <li v-if="completedTodosCount">
-                                    <input
-                                        type="button"
-                                        value="Clear Completed"
-                                        class="btn-small completed-clear"
-                                        v-if="completedTodosCount"
-                                        @click="clearCompleted">
-                                </li>
-                                <li v-if="todos.length"><input
-                                    type="button"
-                                    class="btn-small clear-all"
-                                    value="Clear All"
-                                    @click="clearAll">
-                                </li>
-                            </ul>
-                            <ul class="todo-func-list datasave">
-                                <li v-if="leftTodosCount">
-                                    <input
-                                        type="button"
-                                        value="Export data"
-                                        class="btn-small  action-download"
-                                        id="download"
-                                        onclick="handleClickDownload()"></input>
-                                </li>
-                                <li>
-                                    <input
-                                        value="Import(txt/json)"
-                                        type="button"
-                                        class="btn-small action-import"
-                                        id="import"/>
-                                    <!-- <input type="file" id="import-file" accept=".txt,.json"
-                                    style="display:none"> -->
-                                </li>
-                            </ul>
+.admin-button-small:hover {
+    background: #1e3a8a;
+}
 
-                        </div>
+.nav-categories {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
 
-                    </div>
-                </div>
+.category-btn {
+    padding: 0.6rem 1.2rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
 
-                <!-- Custom Info -->
-                <div class="nav">
-                    <div class="github">
-                        <a href="https://github.com/ricocc/uiineed-todo-list?ref=opensource-todo" target="_blank" class="social-link" draggable="false">
-                            <img src="public/img/social/github.svg" class="ic-social" alt="" draggable="false">
-                        </a>
-                    </div>
-                   <div class="about">
-                        <div class="info">
-                            <div
-                                class="info-ico"
-                                @click="togglePop"
-                                :style="{ fontWeight: popShow ? 'normal' : 'bold' }">
-                                About
-                            </div>
-                            <div class="popup animated popIn" v-if="!popShow">
-                                <div class="author">
-                                    <img src="public/img/author.jpg" alt="">
-                                    RicoCC
-                                </div>
-                                <div class="author-info">
-                                    <div class="author-desc">
-                                        A simple one who loves design and code.
-                                    </div>
-                                </div>
-                                <div class="social">
-                                    <a href="https://x.com/ricouii" target="_blank" class="social-link">
-                                        <img src="public/img/social/x.svg" class="ic-social" alt="">
-                                    </a>
-                                    <a href="https://github.com/ricocc/uiineed-todo-list" target="_blank" class="social-link" draggable="false">
-                                        <img src="public/img/social/github.svg" class="ic-social" alt="" draggable="false">
-                                    </a>
-                                    <a href="mailto:ricocc@qq.com" class="social-link">
-                                        <img src="public/img/social/mail.svg" class="ic-social" alt="">
-                                    </a>
-                                    <a
-                                        href="https://www.xiaohongshu.com/user/profile/5f2b6903000000000101f51f"
-                                        target="_blank"
-                                        class="social-link">
-                                        <img src="public/img/social/xiaohongshu.svg" class="ic-social" alt="">
-                                    </a>
+.category-btn.active {
+    background: #1e40af;
+    color: white;
+    border-color: #1e40af;
+    box-shadow: 0 2px 5px rgba(30, 64, 175, 0.2);
+}
 
-                                    <a
-                                        href="https://dribbble.com/rrrricocc"
-                                        target="_blank"
-                                        class="social-link">
-                                        <img src="public/img/social/dribbble.svg" class="ic-social" alt="">
-                                    </a>
+.category-btn:hover:not(.active) {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
 
-                                </div>
+.nav-list {
+    list-style: none;
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    overflow: hidden;
+}
 
-                                <a href="https://ricoui.com/?ref=todo" target="_blank" class="inspiration">🔖Rico's Blog↗
-                                </a>
-                            </div>
-                        </div>
-                    </div> 
+.nav-item {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #f3f4f6;
+    transition: transform 0.2s ease;
+}
 
-                <!-- witch Chinese Or English as homepage as required -->
-                    <div class="language switch-language">
-                        <a href="javascript:void(0)" class="en active" draggable="false">En</a>
-                        <span>/</span>
-                        <a href="index-zh.html" target="_self" class="zh" draggable="false" @click="saveLanguage('zh')">中</a>
-                    </div>
-                </div>
+.nav-item:last-child {
+    border-bottom: none;
+}
 
+.nav-item:hover {
+    transform: translateY(-2px);
+    background: #f9fafb;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    color: #4b5563;
+    text-decoration: none;
+    flex-grow: 1;
+    transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #1e40af;
+}
+
+.link-info {
+    margin-left: 1rem;
+    flex-grow: 1;
+}
+
+.link-name {
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    color: #111827;
+}
+
+.link-desc {
+    font-size: 0.7rem;
+    color: #6b7280;
+}
+
+.link-logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 100rem;
+    object-fit: cover;
+}
+
+.status-badge {
+    padding: 0.3rem 0.8rem;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+.status-normal {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.status-error {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+/* 分页和管理按钮 */
+.pagination-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    gap: 1rem;
+}
+
+.pagination-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 统一上一页和下一页按钮样式与分类按钮一致 */
+.pagination-controls button {
+    padding: 0.6rem 1.2rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.pagination-controls button.active {
+    background: #1e40af;
+    color: white;
+    border-color: #1e40af;
+    box-shadow: 0 2px 5px rgba(30, 64, 175, 0.2);
+}
+
+/* 后台样式 */
+.backend {
+    display: none;
+    max-width: 1200px;
+    margin: 3rem auto;
+    padding: 0 1rem;
+}
+
+.login-form {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    max-width: 400px;
+    margin: 5rem auto 2rem;
+}
+
+.admin-panel {
+    background: white;
+    padding: 2rem;
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+input, select, textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus, select:focus, textarea:focus {
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    outline: none;
+}
+
+button {
+    padding: 0.8rem 1.5rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.btn-primary {
+    background: #1e40af;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #1e3a8a;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(30, 64, 175, 0.2);
+}
+
+.btn-danger {
+    background: #ef4444;
+    color: white;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+.btn-secondary {
+    background: #9ca3af;
+}
+
+.btn-success {
+    background: #10b981;
+    color: white;
+}
+
+.btn-success:hover {
+    background: #059669;
+}
+
+/* 表格样式 */
+.links-table-container {
+    overflow-x: auto;
+    margin-top: 1.5rem;
+}
+
+.links-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.links-table th {
+    text-align: left;
+    padding: 1rem 1.2rem;
+    background: #f3f4f6;
+    border-radius: 0.5rem 0.5rem 0 0;
+    color: #4b5563;
+    font-weight: 600;
+}
+
+.links-table td {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.links-table tr:last-child td {
+    border-bottom: none;
+}
+
+.links-table tr:hover {
+    background: #f9fafb;
+}
+
+.links-table input, .links-table select, .links-table textarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    font-size: 0.7rem;
+    margin-bottom: 0.3rem;
+}
+
+.links-table input:focus, .links-table select:focus, .links-table textarea:focus {
+    border-color: #1e40af;
+    box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    outline: none;
+}
+
+.links-table td:last-child {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.links-table button {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.7rem;
+}
+
+/* 分类管理样式 */
+.categories-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+}
+
+.category-item {
+    display: flex;
+    align-items: center;
+    background: #f3f4f6;
+    padding: 0.6rem 1.2rem;
+    border-radius: 0.5rem;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.category-item button {
+    background: none;
+    border: none;
+    color: #ef4444;
+    margin-left: 0.8rem;
+    padding: 0;
+    cursor: pointer;
+    font-size: 1.25rem;
+}
+
+/* 页面标题样式 */
+.page-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.page-title h2 {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* 分页样式 */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    gap: 0.5rem;
+}
+
+/* 统一后台上一页和下一页按钮样式与分类按钮一致 */
+.pagination-controls button {
+    padding: 0.6rem 1.2rem;
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.8rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.pagination-controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-controls button:hover:not(:disabled) {
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+}
+
+.pagination-controls button.active {
+    background: #1e40af;
+    color: white;
+    border-color: #1e40af;
+    box-shadow: 0 2px 5px rgba(30, 64, 175, 0.2);
+}
+
+/* 页脚样式 */
+.footer {
+    text-align: center;
+    padding: 1rem 0;
+    color: #6b7280;
+    font-size: 0.7rem;
+    margin-top: 1rem;
+}
+
+.admin-footer {
+    text-align: center;
+    padding: 1rem 0;
+    color: #6b7280;
+    font-size: 0.7rem;
+    margin-top: 1rem;
+}
+
+/* 密码修改样式 */
+.password-change {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .nav-item {
+        align-items: flex-start;
+    }
+
+    .link-info {
+        margin-left: 1rem;
+        width: 100%;
+    }
+
+    .status-badge {
+        margin-top: 0.8rem;
+        align-self: flex-end;
+    }
+
+    .links-table th, .links-table td {
+        padding: 0.8rem 0.5rem;
+    }
+
+    .links-table td {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .links-table th {
+        display: none;
+    }
+
+    .links-table td:before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-bottom: 0.3rem;
+    }
+
+    .pagination-container {
+        flex-direction: row;
+        justify-content: center;
+        gap: 1rem;
+    }
+}
+    </style>
+</head>
+<body>
+    <!-- 前台界面 -->
+    <div class="frontend">
+        <div class="nav-header">
+            <div class="logo-container">
+                <img id="website-logo" src="https://evan.plus/favicon.ico" alt="My Website Favorites Logo">
+                <h1 id="website-title">My Website Favorites</h1>
             </div>
         </div>
-        <script>
-            // localStorage operations
-            var STORAGE_KEY = 'uiineed-todos';
-            var todoStorage = {
-                fetch: function() {
-                    var todos = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                    todos.forEach(function(todo, index) {
-                        todo.id = index;
-                    });
-                    todoStorage.uid = todos.length;
-                    return todos;
-                },
-                save: function(todos) {
-                    localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
-                }
+
+        <!-- 调整后台管理按钮的位置 -->
+        <div class="admin-button-container">
+            <button class="btn-primary admin-button-small" onclick="showAdmin()">管理后台</button>
+        </div>
+
+        <div class="nav-categories" id="category-filters">
+            <button class="category-btn active" data-category="all">全部</button>
+        </div>
+
+        <ul class="nav-list" id="nav-links"></ul>
+
+        <!-- 分页 -->
+        <div class="pagination-container">
+            <div class="pagination-controls">
+                <button class="btn-secondary" id="prev-page" onclick="prevPage()" disabled>上页</button>
+            </div>
+
+            <div class="pagination-controls">
+                <button class="btn-secondary" id="next-page" onclick="nextPage()">下页</button>
+            </div>
+        </div>
+
+        <!-- 版权信息 -->
+        <div class="footer" id="footer-info">
+            <p>© 2025 My Website Favorites. Designer: evan.xin</p>
+        </div>
+    </div>
+
+    <!-- 后台界面 -->
+    <div class="backend">
+        <!-- 登录界面 -->
+        <div class="login-form">
+            <h2 style="margin-bottom: 1.5rem; font-size: 1.5rem; color: #1f2937;">管理员登录</h2>
+            <div class="form-group">
+                <input type="password" id="admin-password" placeholder="输入管理密码" style="width: 100%;">
+            </div>
+            <button class="btn-primary" onclick="login()" style="width: 100%;">登录</button>
+        </div>
+
+        <!-- 管理界面 -->
+        <div class="admin-panel" style="display:none;">
+            <div class="page-title">
+                <h2>链接管理</h2>
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="showFrontend()">返回前台</button>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 0.8rem; font-size: 1.2rem; color: #1f2937;">网站设置</h3>
+                <div class="form-group">
+                    <input type="text" id="website-logo-input" placeholder="输入网站LOGO URL（可选）" style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <input type="text" id="website-title-input" placeholder="输入网站标题" style="width: 100%;">
+                </div>
+                <button class="btn-primary" onclick="saveWebsiteSettings()">保存设置</button>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 0.8rem; font-size: 1.2rem; color: #1f2937;">分类管理</h3>
+                <div class="form-group">
+                    <input type="text" id="new-category" placeholder="输入新分类名称" style="width: 100%;">
+                </div>
+                <button class="btn-primary" onclick="addNewCategory()">添加分类</button>
+                <div class="categories-list" id="categories-list">
+                    <!-- 分类列表将在这里动态生成 -->
+                </div>
+            </div>
+
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 0.8rem; font-size: 1.2rem; color: #1f2937;">页脚信息</h3>
+                <div class="form-group">
+                    <textarea id="footer-text" placeholder="输入页脚信息" style="width: 100%; min-height: 100px;"></textarea>
+                </div>
+                <button class="btn-primary" onclick="saveFooterInfo()">保存页脚信息</button>
+            </div>
+
+            <div class="links-table-container">
+                <table class="links-table">
+                    <thead>
+                        <tr>
+                            <th>名称</th>
+                            <th>网址</th>
+                            <th>分类</th>
+                            <th>简介</th>
+                            <th>状态</th>
+                            <th>Logo</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="links-list"></tbody>
+                </table>
+            </div>
+
+            <div class="pagination-controls">
+                <button class="btn-secondary" id="admin-prev-page" onclick="prevPage()" disabled>上页</button>
+                <button class="btn-secondary" id="admin-next-page" onclick="nextPage()">下页</button>
+            </div>
+
+            <div class="action-buttons" style="margin-top: 2rem;">
+                <button class="btn-primary" onclick="addNewLink()">+ 新增链接</button>
+                <button class="btn-secondary" onclick="exportLinks()">导出链接</button>
+                <input type="file" id="import-file" style="display: none;" onchange="importLinks(this.files[0])">
+                <button class="btn-secondary" onclick="document.getElementById('import-file').click()">导入链接</button>
+            </div>
+
+            <div class="password-change">
+                <h3 style="margin-bottom: 0.8rem; font-size: 1.2rem; color: #1f2937;">修改密码</h3>
+                <div class="form-group">
+                    <input type="password" id="old-password" placeholder="输入旧密码" style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="new-password" placeholder="输入新密码" style="width: 100%;">
+                </div>
+                <div class="form-group">
+                    <input type="password" id="confirm-password" placeholder="确认新密码" style="width: 100%;">
+                </div>
+                <button class="btn-success" onclick="changePassword()">修改密码</button>
+            </div>
+
+            <!-- 后台界面版权信息 -->
+            <div class="admin-footer" id="admin-footer-info">
+                <p>© 2025 My Website Favorites. Designer: evan.xin</p>
+            </div>
+        </div>
+    </div>
+    <script>
+let links = JSON.parse(localStorage.getItem('nav-links')) || Array.from({length: 12}, (_, i) => ({
+    name: "Evan's Space", 
+    url: "https://www.evan.xin", 
+    category: "博客", 
+    description: "keep it real", 
+    status: "normal",
+    logo: "https://www.evan.xin/logo.png"
+}));
+let categories = JSON.parse(localStorage.getItem('categories')) || ["博客", "工具", "收藏"];
+const PART1 = "admin";
+const PART2 = "123";
+const ENCRYPTED_ADMIN_PASSWORD = btoa(PART1 + PART2);
+const SALT = "rainbow_salt_2023";
+let currentPage = 1;
+const itemsPerPage = 8;
+let totalPages = Math.ceil(links.length / itemsPerPage);
+
+function renderFrontend(category = "all") {
+    const container = document.getElementById('nav-links');
+    const filteredLinks = category === "all" 
+        ? links 
+        : links.filter(link => link.category === category);
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedLinks = filteredLinks.slice(startIndex, endIndex);
+
+    container.innerHTML = paginatedLinks.map(link => {
+        const encodeHTML = (str) => str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+            
+        return `
+            <li class="nav-item">
+                <a href="${link.url}" class="nav-link" target="_blank">
+                    ${link.logo ? `<img src="${link.logo}" class="link-logo" alt="${encodeHTML(link.name)}">` : ''}
+                    <div class="link-info">
+                        <div class="link-name">${encodeHTML(link.name)}</div>
+                        <div class="link-desc">${encodeHTML(link.description)}</div>
+                    </div>
+                </a>
+                <span class="status-badge ${link.status === 'normal' ? 'status-normal' : 'status-error'}">
+                    ${link.status === 'normal' ? '正常' : '维护'}
+                </span>
+            </li>
+        `;
+    }).join('');
+
+    updateCategoryFilters(category);
+    updatePaginationButtons();
+}
+
+function updateCategoryFilters(activeCategory = "all") {
+    const container = document.getElementById('category-filters');
+    const totalLinksCount = links.length;
+
+    container.innerHTML = `
+        <button class="category-btn ${activeCategory === 'all' ? 'active' : ''}" data-category="all">全部 (${totalLinksCount})</button>
+    `;
+
+    categories.forEach(cat => {
+        container.innerHTML += `
+            <button class="category-btn ${activeCategory === cat ? 'active' : ''}" data-category="${cat}">
+                ${cat} (${links.filter(link => link.category === cat).length})
+            </button>
+        `;
+    });
+
+    document.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentPage = 1;
+            renderFrontend(this.dataset.category);
+        });
+    });
+}
+
+function showAdmin() {
+    document.querySelector('.frontend').style.display = 'none';
+    document.querySelector('.backend').style.display = 'block';
+    renderAdmin();
+    renderCategories();
+    loadFooterInfo();
+    loadWebsiteSettings();
+    loadAdminFooterInfo();
+}
+
+function showFrontend() {
+    document.querySelector('.backend').style.display = 'none';
+    document.querySelector('.frontend').style.display = 'block';
+    renderFrontend();
+    loadWebsiteLogo();
+    loadWebsiteTitle();
+}
+
+// 密码
+async function encryptPassword(password) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(SALT + password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function login() {
+    const password = document.getElementById('admin-password').value;
+    const encryptedPassword = await encryptPassword(password);
+    const storedPassword = localStorage.getItem('admin-password') || await encryptPassword(atob(ENCRYPTED_ADMIN_PASSWORD));
+    
+    if(encryptedPassword === storedPassword) {
+        document.querySelector('.login-form').style.display = 'none';
+        document.querySelector('.admin-panel').style.display = 'block';
+    } else {
+        alert('密码错误！');
+    }
+}
+
+function renderAdmin() {
+    const tbody = document.getElementById('links-list');
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const paginatedLinks = links.slice(startIndex, endIndex);
+
+    tbody.innerHTML = paginatedLinks.map((link, index) => {
+        const encodeHTML = (str) => str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+            
+        return `
+            <tr>
+                <td>
+                    <div class="form-group">
+                        <input value="${encodeHTML(link.name)}" placeholder="名称">
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <input value="${encodeHTML(link.url)}" placeholder="网址">
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <select>
+                            ${categories.map(cat => 
+                                `<option value="${encodeHTML(cat)}" ${link.category === cat ? 'selected' : ''}>${encodeHTML(cat)}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <textarea>${encodeHTML(link.description)}</textarea>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <select onchange="updateStatus(${startIndex + index}, this.value)">
+                            <option value="normal" ${link.status === 'normal' ? 'selected' : ''}>正常</option>
+                            <option value="error" ${link.status !== 'normal' ? 'selected' : ''}>维护</option>
+                        </select>
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <input type="text" placeholder="https://example.com/logo.png" value="${encodeHTML(link.logo || '')}">
+                    </div>
+                </td>
+                <td>
+                    <div class="form-group">
+                        <button class="btn-primary" onclick="saveLink(${startIndex + index})">保存</button>
+                        <button class="btn-danger" onclick="deleteLink(${startIndex + index})">删除</button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+
+    updatePaginationButtons();
+}
+
+function renderCategories() {
+    const container = document.getElementById('categories-list');
+    container.innerHTML = categories.map((cat, index) => {
+        const encodeHTML = (str) => str.replace(/[&<>'"]/g, 
+            tag => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                "'": '&#39;',
+                '"': '&quot;'
+            }[tag]));
+            
+        return `
+            <div class="category-item">
+                <span>${encodeHTML(cat)}</span>
+                <button onclick="deleteCategory(${index})">✕</button>
+            </div>
+        `;
+    }).join('');
+}
+
+function loadFooterInfo() {
+    const footerInfo = localStorage.getItem('footer-info') || '© 2025 My Website Favorites. Designer: evan.xin';
+    document.getElementById('footer-text').value = footerInfo;
+    document.getElementById('footer-info').innerHTML = `<p>${footerInfo}</p>`;
+}
+
+function loadAdminFooterInfo() {
+    const footerInfo = localStorage.getItem('footer-info') || '© 2025 My Website Favorites. Designer: evan.xin';
+    document.getElementById('admin-footer-info').innerHTML = `<p>${footerInfo}</p>`;
+}
+
+function loadWebsiteSettings() {
+    const websiteLogo = localStorage.getItem('website-logo') || '';
+    const websiteTitle = localStorage.getItem('website-title') || 'My Website Favorites';
+    document.getElementById('website-logo-input').value = websiteLogo;
+    document.getElementById('website-title-input').value = websiteTitle;
+}
+
+function saveWebsiteSettings() {
+    const websiteLogo = document.getElementById('website-logo-input').value;
+    const websiteTitle = document.getElementById('website-title-input').value;
+    localStorage.setItem('website-logo', websiteLogo);
+    localStorage.setItem('website-title', websiteTitle);
+    loadWebsiteLogo();
+    loadWebsiteTitle();
+}
+
+function loadWebsiteLogo() {
+    const websiteLogo = localStorage.getItem('website-logo') || '';
+    const logoImg = document.getElementById('website-logo');
+    
+    if (websiteLogo) {
+        logoImg.src = websiteLogo;
+        logoImg.style.display = 'block';
+    } else {
+        logoImg.style.display = 'none';
+    }
+}
+
+function loadWebsiteTitle() {
+    const websiteTitle = localStorage.getItem('website-title') || 'My Website Favorites';
+    document.querySelector('.logo-container h1').textContent = websiteTitle;
+    document.title = websiteTitle;
+}
+
+function saveFooterInfo() {
+    const footerInfo = document.getElementById('footer-text').value;
+    localStorage.setItem('footer-info', footerInfo);
+    document.getElementById('footer-info').innerHTML = `<p>${footerInfo}</p>`;
+    loadAdminFooterInfo();
+}
+
+function addNewLink() {
+    links.push({ 
+        name: "新链接", 
+        url: "https://", 
+        category: categories[0], 
+        description: "", 
+        status: "normal",
+        logo: ""
+    });
+    localStorage.setItem('nav-links', JSON.stringify(links));
+    currentPage = Math.ceil(links.length / itemsPerPage);
+    renderAdmin();
+}
+
+function saveLink(index) {
+    const row = document.querySelectorAll('#links-list tr')[index - ((currentPage - 1) * itemsPerPage)];
+    if (!row) return;
+
+    // 验证输入内容
+    const name = row.querySelector('td:first-child input').value.trim();
+    const url = row.querySelector('td:nth-child(2) input').value.trim();
+    const category = row.querySelector('td:nth-child(3) select').value;
+    const description = row.querySelector('td:nth-child(4) textarea').value.trim();
+    const status = row.querySelector('td:nth-child(5) select').value;
+    const logo = row.querySelector('td:nth-child(6) input').value.trim();
+
+    if (!name || !url || !category) {
+        alert('名称、网址和分类不能为空！');
+        return;
+    }
+
+    links[index] = {
+        name,
+        url,
+        category,
+        description,
+        status,
+        logo
+    };
+    localStorage.setItem('nav-links', JSON.stringify(links));
+    renderFrontend();
+    renderAdmin();
+}
+
+function deleteLink(index) {
+    if(confirm('确认删除该链接？')) {
+        links.splice(index, 1);
+        localStorage.setItem('nav-links', JSON.stringify(links));
+        currentPage = Math.max(1, Math.min(currentPage, Math.ceil(links.length / itemsPerPage)));
+        renderAdmin();
+        renderFrontend();
+    }
+}
+
+function updateStatus(index, status) {
+    links[index].status = status;
+    localStorage.setItem('nav-links', JSON.stringify(links));
+    renderFrontend();
+    renderAdmin();
+}
+
+function addNewCategory() {
+    const categoryName = document.getElementById('new-category').value.trim();
+    if (!categoryName) {
+        alert('分类名称不能为空！');
+        return;
+    }
+
+    // 验证输入内容
+    if (!/^[a-zA-Z0-9\u4e00-\u9fa5]+$/.test(categoryName)) {
+        alert('分类名称只能包含字母、数字和中文！');
+        return;
+    }
+
+    if (!categories.includes(categoryName)) {
+        categories.push(categoryName);
+        localStorage.setItem('categories', JSON.stringify(categories));
+        renderCategories();
+        document.getElementById('new-category').value = '';
+        renderFrontend();
+    } else {
+        alert('该分类已存在！');
+    }
+}
+
+function deleteCategory(index) {
+    if(confirm('确认删除该分类？此操作不会删除链接，只会将链接分类重置为第一个分类')) {
+        const deletedCategory = categories[index];
+        categories.splice(index, 1);
+        localStorage.setItem('categories', JSON.stringify(categories));
+        
+        // 更新链接分类
+        links.forEach(link => {
+            if(link.category === deletedCategory) {
+                link.category = categories[0] || "未分类";
             }
-        </script>
-        <script>
-            // Vue instance initialization
-            var app = new Vue({
-                el: '#todo-app',
-                data: function() {
-                    return {
-                        todos: todoStorage.fetch(),
-                        newTodoTitle: '',
-                        editedTodo: null,
-                        intention: 'all', // Default: all
-                        checkEmpty: false,
-                        recycleBin: [],
-                        dragIndex: '',
-                        enterIndex: '',
-                        show: true,
-                        delayTime: '1',
-                        isShow: false,
-                        shortCut: 'OPEN✨',
-                        popShow: true,
-                        windowWidth: document.documentElement.clientWidth,
-                        slogan: this.getSlogan(),
-                        isEditing: false,
-                        originalSlogan: ""
-                    };
-                },
-                watch: {
-                    windowWidth(val) {
-                        let that = this;
-                    },
-                    todos: {
-                        handler: function(todos) {
-                            todoStorage.save(todos);
-                        },
-                        deep: true
-                    }
-                },
-                methods: {
-                    editText() {
-                        this.originalSlogan = this.slogan;
-                        this.isEditing = true;
-                        this.$nextTick(() => {
-                            this.$refs.sloganInput.focus();
-                        });
-                    },
-                    saveText() {
-                        this.isEditing = false;
-                        localStorage.setItem('uiineed-slogan', this.slogan);
-                    },
-                    cancelText() {
-                        this.slogan = this.originalSlogan;
-                        this.isEditing = false;
-                    },
-                    getSlogan() {
-                        return localStorage.getItem('uiineed-slogan') || "Act Now, Simplify Life.☕";
-                    },
-                    contorlScreen: function() {
-                        if (this.windowWidth < 768) {
-                            this.isShow = !this.isShow;
-                            return this.shortCut = 'Filter';
-                        }
-                    },
-                    togglePop: function() {
-                        this.popShow = !this.popShow;
-                    },
-                    shortCutAction: function() {
-                        this.isShow = !this.isShow;
-                        if (this.isShow) {
-                            return this.shortCut = '＝';
-                        } else {
-                            return this.shortCut = 'OPEN✨';
-                        }
-                    },
-                    shuffle: function() {
-                        this.filteredTodos = _.shuffle(this.filteredTodos);
-                    },
-                    addTodo: function(e) {
-                        if (this.newTodoTitle === '') {
-                            this.checkEmpty = true;
-                            return;
-                        }
-                        this.todos.unshift({
-                            id: todoStorage.uid++,
-                            title: this.newTodoTitle,
-                            completed: false,
-                            removed: false
-                        });
-                        this.newTodoTitle = '';
-                        this.checkEmpty = false;
-                        this.delayTime = '0';
-                    },
-                    markAsCompleted: function(todo) {
-                        todo.completed = true;
-                    },
-                    markAsUncompleted: function(todo) {
-                        todo.completed = false;
-                    },
-                    markAllAsCompleted: function() {
-                        confirm('Confirm to mark all as completed?').then((confirmed) => {
-                            if (confirmed) {
-                                this.todos.map(function(todo) {
-                                    if (!todo.completed) todo.completed = true;
-                                });
-                            }
-                        }); 
-                    },
+        });
+        localStorage.setItem('nav-links', JSON.stringify(links));
+        
+        renderCategories();
+        renderAdmin();
+        renderFrontend();
+    }
+}
 
-                    removeTodo: function(todo) {
-                        let removedTodo = this.todos.splice(this.todos.indexOf(todo), 1)[0];
-                        removedTodo.removed = true;
-                        this.recycleBin.unshift(removedTodo);
-                    },
-                    restoreTodo: function(todo) {
-                        todo.removed = false;
-                        this.todos.unshift(todo);
-                        let pos = this.recycleBin.indexOf(todo);
-                        this.recycleBin.splice(pos, 1);
-                    },
-                    editdTodo: function(todo) {
-                        this.editedTodo = {
-                            id: todo.id,
-                            title: todo.title
-                        }
-                    },
-                    lineFeed: function(event) {
-                        if (event.keyCode == 13 && event.ctrlKey) {
-                            this.newTodoTitle = this.newTodoTitle + '\n';
-                        } else {
-                            if (this.newTodoTitle === '') {
-                                this.checkEmpty = true;
-                                return;
-                            }
-                            this.todos.unshift({
-                                id: todoStorage.uid++,
-                                title: this.newTodoTitle,
-                                completed: false,
-                                removed: false
-                            });
-                            this.newTodoTitle = '';
-                            this.checkEmpty = false;
-                            this.delayTime = '0';
-                        }
-                    },
-                    editDone: function(todo) {
-                        if (todo.title === '') {
-                            this.removeTodo(todo);
-                        }
-                        this.editedTodo = null;
-                    },
-                    cancelEdit: function(todo) {
-                        todo.title = this.editedTodo.title;
-                        this.editedTodo = null;
-                    },
-                    clearCompleted: function() {
-                        confirm('Confirm to clear all completed items?').then((confirmed) => {
-                            if (confirmed) {
-                                this.completedTodos.map(todo => todo.removed = true);
-                                this.recycleBin.unshift(...this.completedTodos);
-                                this.todos = this.leftTodos;
-                            }
-                        });
-                    },
-                    clearAll: function() {
-                        confirm('Confirm to clear all todo items?').then((confirmed) => {
-                            if (confirmed) {
-                                this.todos.map(todo => todo.removed = true);
-                                this.recycleBin.unshift(...this.todos);
-                                this.todos = [];
-                            }
-                        });
-                    },
+function prevPage() {
+    if (currentPage > 1) {
+        currentPage--;
+        renderFrontend();
+        renderAdmin();
+    }
+}
 
-                    // Drag Operations
-                    dragstart: function(index) {
-                        this.dragIndex = index;
-                    },
-                    dragenter: function(e, index) {
-                        e.preventDefault();
-                        // Avoid source object triggering its own dragenter event
-                        if (this.dragIndex !== index) {
-                            const source = this.filteredTodos[this.dragIndex];
-                            this.filteredTodos.splice(this.dragIndex, 1);
-                            this.filteredTodos.splice(index, 0, source);
-                            // After reordering, target index becomes source index
-                            this.dragIndex = index;
-                        }
-                    },
-                    dragover: function(e, index) {
-                        e.preventDefault();
-                    },
-                    // JS hooks for animation
-                    beforeEnter(dom) {
-                        dom.classList.add('drag-enter-active');
-                    },
-                    enter(dom, done) {
-                        let delay = dom.dataset.delay;
-                        setTimeout(() => {
-                            this.delayTime = '1';
-                            dom.classList.remove('drag-enter-active');
-                            dom.classList.add('drag-enter-to');
-                            let transitionend = window.ontransitionend
-                                ? "transitionend"
-                                : "webkitTransitionEnd";
-                            dom.addEventListener(transitionend, function onEnd() {
-                                dom.removeEventListener(transitionend, onEnd);
-                                done();
-                                // Call done() to tell Vue animation is complete, triggering afterEnter hook
-                            })
-                        }, delay);
-                    },
-                    afterEnter(dom) {
-                        dom.classList.remove('drag-enter-to');
-                    },
-                    saveLanguage(lang) {
-                        localStorage.setItem('uiineed-todos-lang', lang);
-                    }
-                },
+function nextPage() {
+    if (currentPage * itemsPerPage < links.length) {
+        currentPage++;
+        renderFrontend();
+        renderAdmin();
+    }
+}
 
-                mounted() {
-                    this.show = true;
-                    var that = this;
-                    this.contorlScreen();
-                    // Attach window.onresize event to mounted function
-                    window.onresize = () => {
-                        return (() => {
-                            window.fullWidth = document.documentElement.clientWidth;
-                            that.windowWidth = window.fullWidth; // width
-                        })()
-                    };
-                },
+function updatePaginationButtons() {
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage * itemsPerPage >= links.length;
+    document.getElementById('admin-prev-page').disabled = currentPage === 1;
+    document.getElementById('admin-next-page').disabled = currentPage * itemsPerPage >= links.length;
+}
 
-                directives: {
-                    focus: {
-                        inserted: function(el) {
-                            el.focus()
-                        }
-                    }
-                },
+async function changePassword() {
+    const oldPassword = document.getElementById('old-password').value;
+    const newPassword = document.getElementById('new-password').value;
+    const confirmPassword = document.getElementById('confirm-password').value;
 
-                computed: {
-                    emptyChecked: function() {
-                        return this.newTodoTitle.length === 0 && this.checkEmpty
-                    },
-                    leftTodos: function() {
-                        return this.todos.filter(function(todo) {
-                            return !todo.completed
-                        })
-                    },
-                    leftTodosCount: function() {
-                        return this.leftTodos.length
-                    },
-                    hasRemovedTodo: function() {
-                        return !!this.removedTodo
-                    },
-                    completedTodos: function() {
-                        return this.todos.filter(function(todo) {
-                            return todo.completed
-                        })
-                    },
-                    completedTodosCount: function() {
-                        return this.completedTodos.length
-                    },
-                    filteredTodos: function() {
-                        if (this.intention === 'ongoing') {
-                            return this.leftTodos
-                        } else if (this.intention === 'completed') {
-                            return this.completedTodos
-                        } else if (this.intention === 'removed') {
-                            return this.recycleBin
-                        } else {
-                            return this.todos
-                        }
-                    },
-                    showEmptyTips() {
-                        return this.filteredTodos.length === 0 && this.intention !== 'removed';
-                    }
+    if (!oldPassword || !newPassword || !confirmPassword) {
+        alert('所有字段不能为空！');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        alert('新密码和确认密码不一致！');
+        return;
+    }
+
+    const encryptedOldPassword = await encryptPassword(oldPassword);
+    const storedPassword = localStorage.getItem('admin-password') || await encryptPassword(atob(ENCRYPTED_ADMIN_PASSWORD));
+
+    if (encryptedOldPassword !== storedPassword) {
+        alert('旧密码错误！');
+        return;
+    }
+
+    localStorage.setItem('admin-password', await encryptPassword(newPassword));
+    alert('密码修改成功！');
+    document.getElementById('old-password').value = '';
+    document.getElementById('new-password').value = '';
+    document.getElementById('confirm-password').value = '';
+}
+
+function exportLinks() {
+    const data = JSON.stringify(links, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'links_export.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importLinks(file) {
+    if (!file || file.type !== 'application/json') {
+        alert('请选择有效的JSON文件！');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedLinks = JSON.parse(e.target.result);
+            if (!Array.isArray(importedLinks)) {
+                throw new Error('导入数据格式不正确！');
+            }
+
+            importedLinks.forEach(link => {
+                if (!link.name || !link.url || !link.category) {
+                    throw new Error('导入数据格式不正确！');
                 }
-                })
-        </script>
-        <script>
-            // Fetch data from localStorage
-            var fetchedTodos = todoStorage.fetch();
-
-            const handleClickDownload = () => {
-                const todosText = JSON.stringify(todoStorage.fetch(), null, 2);
-                const date = new Date().toISOString().replace(/-|:|\.\d+/g, '');
-                const fileName = `todos-${date.slice(0, 8)}-${date.slice(9, 15)}.txt`;
-                
-                const element = document.createElement('a');
-                element.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(todosText);
-                element.download = fileName;
-                
-                document.body.appendChild(element);
-                element.click();
-                document.body.removeChild(element);
-            };
-
-            // Import file
-            let tempFileInput = null; // Store dynamically created file input element
-            document.getElementById('import').addEventListener('click', function() {
-                if (!tempFileInput) {
-                    tempFileInput = document.createElement('input');
-                    tempFileInput.type = 'file';
-                    tempFileInput.accept = '.txt,.json';
-                    tempFileInput.style.display = 'none';
-                    this.parentNode.appendChild(tempFileInput);
-
-                    tempFileInput.addEventListener('change', function(event) {
-                        var file = event.target.files[0];
-                        if (!file) return alert('No file selected!', 'Error');
-                        var reader = new FileReader();
-                        reader.onload = function(e) {
-                            var content = e.target.result;
-                            try {
-                                var importedData;
-                                if (file.type === 'application/json') {
-                                    // If JSON file, parse directly
-                                    importedData = JSON.parse(content);
-                                } else if (file.type === 'text/plain') {
-                                    // If TXT file, try to parse as JSON
-                                    importedData = JSON.parse(content.trim());
-                                } else {
-                                    throw new Error('Unsupported file type');
-                                }
-                                // Get current data from localStorage
-                                var currentTodos = todoStorage.fetch() || [];
-                                // Get current data count for new unique ids
-                                var nextIdIndex = currentTodos.length;
-                                // Update ids for imported data
-                                importedData.forEach((item, index) => {
-                                    item.id = nextIdIndex + index;
-                                });
-                                // Append imported data to existing data
-                                var updatedTodos = currentTodos.concat(importedData);
-                                // Update localStorage
-                                todoStorage.save(updatedTodos);
-                                // Update page content
-                                updatePageContent(updatedTodos);
-                                alert('File imported successfully, data has been appended!');
-                            } catch (error) {
-                                alert('File parsing error, please ensure correct format: ' + error.message, 'Error');
-                            }
-                        };
-                        reader.onerror = function(e) {
-                            alert('Error reading file: ' + e.target.error.name, 'Error');
-                        };
-                        reader.readAsText(file);
-                        this.parentNode.removeChild(tempFileInput);
-                        tempFileInput = null;
-                    });
-                }
-                tempFileInput.click();
             });
 
-            function updatePageContent(data) {
-                app.todos = data;
-            }
+            links = importedLinks;
+            localStorage.setItem('nav-links', JSON.stringify(links));
+            renderAdmin();
+            renderFrontend();
+            alert('链接导入成功！');
+        } catch (error) {
+            alert('导入失败，请检查文件格式是否正确。');
+        }
+    };
+    reader.readAsText(file);
+}
 
-        </script>
-    </body>
-
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    renderFrontend();
+    loadWebsiteLogo();
+    loadWebsiteTitle();
+    loadAdminFooterInfo();
+});
+    </script>
+</body>
 </html>
